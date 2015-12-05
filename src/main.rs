@@ -3,16 +3,18 @@ use rhyme::*;
 
 extern crate rustc_serialize;
 use rustc_serialize::json::{self, Json};
-use std::fs::File;
-use std::io::Read;
+extern crate curl;
+use curl::http;
+use std::str;
 
 fn main() {
-    let mut file = File::open("heart.json").unwrap();
-    let mut data = String::new();
-    file.read_to_string(&mut data).unwrap();
+    let resp = http::handle()
+        .get("http://rhymebrain.com/talk?function=getRhymes&word=heart")
+        .exec().unwrap();
+
+    let data = str::from_utf8(resp.get_body()).unwrap();
     
     let json = Json::from_str(&data).unwrap();
-
     let arr = json.as_array().unwrap();
 
     let mut rhyme_list : Vec<Rhyme> = Vec::new();

@@ -5,3 +5,4 @@ authors = ["Dorian <dorian.scheidt@gmail.com>"]
 
 [dependencies]
 rustc-serialize = "0.3"
+curl = "0.2"
