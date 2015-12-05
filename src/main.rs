@@ -17,18 +17,13 @@ fn main() {
         .exec().unwrap();
 
     let data = str::from_utf8(resp.get_body()).unwrap();
-    
     let json = Json::from_str(&data).unwrap();
-    let arr = json.as_array().unwrap();
 
-    let mut rhyme_list : Vec<Rhyme> = Vec::new();
-    for item in arr {
-        let decoded : Rhyme = json::decode(&item.to_string()).unwrap();
-        // println!("Look ma, I decoded a {}", decoded.word);
-        rhyme_list.push(decoded);
-    }
+    let mut rhyme_list : Vec<Rhyme> = json.as_array().unwrap().iter()
+        .map(|item| json::decode::<Rhyme>(&item.to_string()).unwrap())
+        .filter(|item| item.score == 300)
+        .collect();
 
-    rhyme_list.retain( |x| x.score == 300);
     println!("The filtered rhyme list: {}", rhyme_list.len());
 
     for item in rhyme_list {
