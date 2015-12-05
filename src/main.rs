@@ -1,3 +1,6 @@
+mod rhyme;
+use rhyme::*;
 fn main() {
-    println!("Hello, world!");
+    let rhyme = Rhyme::new("Heart", 100, 300, "bc", 1);
+    println!("the word is: {}", rhyme.word);
 }
