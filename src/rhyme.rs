@@ -1,7 +1,8 @@
+#[derive(RustcDecodable, RustcEncodable)]
 pub struct Rhyme {
     pub word: String,
     freq: i32,
-    score: i32,
+    pub score: i32,
     flags: String,
     syllables: i32
 }
