@@ -1,3 +1,4 @@
+use std::io::prelude::*;
 mod rhyme;
 use rhyme::*;
 
@@ -7,26 +8,51 @@ extern crate curl;
 use curl::http;
 use std::str;
 use std::env;
+use std::fs::{self, File};
+use std::path::Path;
 
 fn main() {
     let word = env::args().nth(1).unwrap_or("heart".to_string());
     println!("the word is really: {}", word);
     let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
-    let resp = http::handle()
-        .get(url)
-        .exec().unwrap();
+    let resp = http::handle().get(url).exec().unwrap(); 
 
     let data = str::from_utf8(resp.get_body()).unwrap();
     let json = Json::from_str(&data).unwrap();
 
-    let mut rhyme_list : Vec<Rhyme> = json.as_array().unwrap().iter()
+    let rhymes = json.as_array().unwrap().iter()
         .map(|item| json::decode::<Rhyme>(&item.to_string()).unwrap())
-        .filter(|item| item.score == 300)
-        .collect();
+        .filter(|rhyme| rhyme.score == 300)
+        .collect::<Vec<Rhyme>>();
 
-    println!("The filtered rhyme list: {}", rhyme_list.len());
+    println!("The filtered rhyme list: {}", rhymes.len());
 
-    for item in rhyme_list {
-        println!("the word is: {}", item.word);
+    let strings = pull_strings_from_dir();
+
+    for string in strings.iter() {
+        for rhyme in rhymes.iter() {
+            let s = string.as_str();
+            if s.contains(rhyme.word.as_str()) {
+                println!("We've got a match: {}", &s);
+            }
+        }
     }
+}
+
+fn pull_strings_from_dir() -> Vec<String> {
+    let path = Path::new("./phrases/");
+    let files = fs::read_dir(path).unwrap();
+
+    let mut strings : Vec<String> = Vec::new();
+    for file in files {
+        let mut f = File::open(file.unwrap().path()).unwrap();
+        let mut s = String::new();
+        f.read_to_string(&mut s);
+        let str = s.split("\n").collect::<Vec<&str>>();
+        for st in str {
+            strings.push(st.to_string());
+        }
+    }
+
+    return strings;
 }
