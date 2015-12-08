@@ -27,16 +27,23 @@ fn main() {
 
     println!("The filtered rhyme list: {}", rhymes.len());
 
-    let strings = pull_strings_from_dir();
-
-    for string in strings.iter() {
-        for rhyme in rhymes.iter() {
-            let s = string.as_str();
-            if s.contains(rhyme.word.as_str()) {
-                println!("We've got a match: {}", &s);
+    let mut strings = pull_strings_from_dir();
+    let contains_rhyme =  |word : &String| -> bool {
+        for rhyme in &rhymes {
+            let s: &str = &word;
+            let r: &str = &rhyme.word;
+            if s.contains(r) {
+                return true;
             }
-        }
-    }
+        };
+        return false;
+    };
+
+    let filteredStrings = strings.retain(&contains_rhyme);
+
+    print!("There are this many filtered strings: {}", strings.len())
+
+
 }
 
 fn pull_strings_from_dir() -> Vec<String> {
