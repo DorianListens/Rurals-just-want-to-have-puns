@@ -33,12 +33,9 @@ fn main() {
 
     let contains_rhyme =  |word : &String| -> bool {
         for rhyme in &rhymes {
-            let s: &str = &word;
-            let r: &str = &rhyme.word;
-            let rstring = format!("\\b{}\\b", r);
-            let rstr : &str = &rstring;
+            let rstring = format!("\\b{}\\b", &rhyme.word);
             let regex = Regex::new(&rstring).unwrap();
-            return regex.is_match(&s);
+            return regex.is_match(&word);
         };
         return false;
     };
