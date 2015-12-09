@@ -2,6 +2,8 @@ use std::io::prelude::*;
 mod rhyme;
 use rhyme::*;
 
+extern crate regex;
+use regex::Regex;
 extern crate rustc_serialize;
 use rustc_serialize::json::{self, Json};
 extern crate curl;
@@ -28,19 +30,24 @@ fn main() {
     println!("The filtered rhyme list: {}", rhymes.len());
 
     let mut strings = pull_strings_from_dir();
+
     let contains_rhyme =  |word : &String| -> bool {
         for rhyme in &rhymes {
             let s: &str = &word;
             let r: &str = &rhyme.word;
-            if s.contains(r) {
-                return true;
-            }
+            let rstring = format!("\\b{}\\b", r);
+            let rstr : &str = &rstring;
+            let regex = Regex::new(&rstring).unwrap();
+            return regex.is_match(&s);
         };
         return false;
     };
 
-    let filteredStrings = strings.retain(&contains_rhyme);
+    strings.retain(&contains_rhyme);
 
+    for string in &strings {
+        print!("Filtered string: {} \n", string);
+    };
     print!("There are this many filtered strings: {}", strings.len())
 
 
