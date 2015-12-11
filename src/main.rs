@@ -15,60 +15,50 @@ use std::fs::{self, File};
 use std::path::Path;
 
 fn main() {
-    let json = fetch_json();
+    let word = env::args().nth(1).unwrap_or("heart".to_string());
+    println!("the word is really: {}", word);
+    let json = fetch_json(&word);
 
     let rhymes = json.as_array().unwrap().iter()
         .map(|item| json::decode::<Rhyme>(&item.to_string()).unwrap())
         .filter(|rhyme| rhyme.score == 300)
         .collect::<Vec<Rhyme>>();
 
-    println!("The filtered rhyme list: {}", rhymes.len());
-
     let mut strings = pull_strings_from_dir();
 
     let contains_rhyme =  |word : &String| -> bool {
+        let mut matched: bool = false;
         for rhyme in &rhymes {
             let rstring = format!("\\b{}\\b", &rhyme.word);
             let regex = Regex::new(&rstring).unwrap();
-            return regex.is_match(&word);
+            if regex.is_match(&word) {
+                matched = true;
+            }
         };
-        return false;
+        return matched;
     };
 
     strings.retain(&contains_rhyme);
-
-    for string in &strings {
-        print!("Filtered string: {} \n", string);
-    };
-
-    for string in &strings {
-        let puns = replace_strings_with_puns(&string, &rhymes);
-        for pun in &puns {
-            println!("Pun!: {}", pun);
+    let puns = strings.iter()
+        .map( |string: &String| {
+        let mut pun = Pun::new(&string, &string);
+        for rhyme in &rhymes {
+           let rstring = format!("\\b{}\\b", &rhyme.word);
+           let regex = Regex::new(&rstring).unwrap();
+           if regex.is_match(&string) {
+               let replaced = regex.replace(&string, NoExpand(&word));
+               pun = Pun::new(&string, &replaced)
+           }
         }
-    }
+        return pun;
+    }).collect::<Vec<Pun>>();
 
-    print!("There are this many filtered strings: {}", strings.len())
+    for pun in &puns {
+        println!("{} (pun of {})", &pun.pun, &pun.original);
+    }
 }
 
-fn replace_strings_with_puns(string: &String, rhymes: &Vec<Rhyme>) -> Vec<String> {
-    let mut to_return : Vec<String> = Vec::new();
-    for rhyme in rhymes {
-       let rstring = format!("\\b{}\\b", &rhyme.word);
-       let regex = Regex::new(&rstring).unwrap();
-       let strin : &str = &string;
-       let rstring : &str = &rhyme.word;
-       println!("rhyme: {}", &rstring);
-       let replaced = regex.replace(&strin, NoExpand(&rhyme.word));
-       to_return.push(replaced);
-    }
-    return to_return;
-}
-        
-
-fn fetch_json() -> Json {
-    let word = env::args().nth(1).unwrap_or("heart".to_string());
-    println!("the word is really: {}", word);
+fn fetch_json(word:&String) -> Json {
     let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
     let resp = http::handle().get(url).exec().unwrap(); 
 

@@ -7,6 +7,20 @@ pub struct Rhyme {
     syllables: i32
 }
 
+pub struct Pun {
+    pub original: String,
+    pub pun: String
+}
+
+impl Pun {
+    pub fn new(original:&str, pun: &str) -> Pun {
+        Pun {
+            original: original.to_string(),
+            pun: pun.to_string()
+        }
+    }
+}
+
 impl Rhyme {
    pub fn new(word:&str, freq:i32, score:i32, flags:&str, syllables: i32) -> Rhyme {
         Rhyme {
