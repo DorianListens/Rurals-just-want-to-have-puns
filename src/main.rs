@@ -4,6 +4,7 @@ use rhyme::*;
 
 extern crate regex;
 use regex::Regex;
+use regex::NoExpand;
 extern crate rustc_serialize;
 use rustc_serialize::json::{self, Json};
 extern crate curl;
@@ -14,13 +15,7 @@ use std::fs::{self, File};
 use std::path::Path;
 
 fn main() {
-    let word = env::args().nth(1).unwrap_or("heart".to_string());
-    println!("the word is really: {}", word);
-    let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
-    let resp = http::handle().get(url).exec().unwrap(); 
-
-    let data = str::from_utf8(resp.get_body()).unwrap();
-    let json = Json::from_str(&data).unwrap();
+    let json = fetch_json();
 
     let rhymes = json.as_array().unwrap().iter()
         .map(|item| json::decode::<Rhyme>(&item.to_string()).unwrap())
@@ -45,9 +40,41 @@ fn main() {
     for string in &strings {
         print!("Filtered string: {} \n", string);
     };
+
+    for string in &strings {
+        let puns = replace_strings_with_puns(&string, &rhymes);
+        for pun in &puns {
+            println!("Pun!: {}", pun);
+        }
+    }
+
     print!("There are this many filtered strings: {}", strings.len())
+}
 
+fn replace_strings_with_puns(string: &String, rhymes: &Vec<Rhyme>) -> Vec<String> {
+    let mut to_return : Vec<String> = Vec::new();
+    for rhyme in rhymes {
+       let rstring = format!("\\b{}\\b", &rhyme.word);
+       let regex = Regex::new(&rstring).unwrap();
+       let strin : &str = &string;
+       let rstring : &str = &rhyme.word;
+       println!("rhyme: {}", &rstring);
+       let replaced = regex.replace(&strin, NoExpand(&rhyme.word));
+       to_return.push(replaced);
+    }
+    return to_return;
+}
+        
 
+fn fetch_json() -> Json {
+    let word = env::args().nth(1).unwrap_or("heart".to_string());
+    println!("the word is really: {}", word);
+    let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
+    let resp = http::handle().get(url).exec().unwrap(); 
+
+    let data = str::from_utf8(resp.get_body()).unwrap();
+    let json = Json::from_str(&data).unwrap();
+    return json;
 }
 
 fn pull_strings_from_dir() -> Vec<String> {
