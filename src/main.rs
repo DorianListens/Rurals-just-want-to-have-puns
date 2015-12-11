@@ -24,34 +24,21 @@ fn main() {
         .filter(|rhyme| rhyme.score == 300)
         .collect::<Vec<Rhyme>>();
 
-    let mut strings = pull_strings_from_dir();
+    let strings = pull_strings_from_dir();
 
-    let contains_rhyme =  |word : &String| -> bool {
-        let mut matched: bool = false;
-        for rhyme in &rhymes {
-            let rstring = format!("\\b{}\\b", &rhyme.word);
-            let regex = Regex::new(&rstring).unwrap();
-            if regex.is_match(&word) {
-                matched = true;
+    let puns:Vec<Pun> = strings.iter()
+        .filter_map( |string: &String| {
+            for rhyme in &rhymes {
+               let rstring = format!("\\b{}\\b", &rhyme.word);
+               let regex = Regex::new(&rstring).unwrap();
+               if regex.is_match(&string) {
+                   let replaced = regex.replace(&string, NoExpand(&word));
+                   return Some(Pun::new(&string, &replaced));
+               }
             }
-        };
-        return matched;
-    };
-
-    strings.retain(&contains_rhyme);
-    let puns = strings.iter()
-        .map( |string: &String| {
-        let mut pun = Pun::new(&string, &string);
-        for rhyme in &rhymes {
-           let rstring = format!("\\b{}\\b", &rhyme.word);
-           let regex = Regex::new(&rstring).unwrap();
-           if regex.is_match(&string) {
-               let replaced = regex.replace(&string, NoExpand(&word));
-               pun = Pun::new(&string, &replaced)
-           }
-        }
-        return pun;
-    }).collect::<Vec<Pun>>();
+            return None;
+        })
+        .collect();
 
     for pun in &puns {
         println!("{} (pun of {})", &pun.pun, &pun.original);

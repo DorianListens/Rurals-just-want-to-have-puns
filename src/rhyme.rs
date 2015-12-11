@@ -21,14 +21,3 @@ impl Pun {
     }
 }
 
-impl Rhyme {
-   pub fn new(word:&str, freq:i32, score:i32, flags:&str, syllables: i32) -> Rhyme {
-        Rhyme {
-            word: word.to_string(),
-            freq: freq,
-            score: score,
-            flags: flags.to_string(),
-            syllables: syllables
-        }
-    }
-}
