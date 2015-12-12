@@ -17,9 +17,9 @@ use std::path::Path;
 fn main() {
     let word = env::args().nth(1).unwrap_or("heart".to_string());
     println!("the word is really: {}", word);
-    let json = fetch_json(&word);
+    let json = get_json_array(&word);
 
-    let rhymes = json.as_array().unwrap_or(&vec![]).iter()
+    let rhymes = json.iter()
         .filter_map(decode_rhyme)
         .filter(|rhyme| rhyme.score == 300)
         .collect::<Vec<Rhyme>>();
@@ -27,7 +27,7 @@ fn main() {
     let strings = pull_strings_from_dir();
 
     let puns:Vec<Pun> = strings.iter()
-        .filter_map( |string| return make_puns(&rhymes, &word, string))
+        .filter_map(|string| return make_puns(&rhymes, &word, string))
         .collect();
 
     for pun in &puns {
@@ -55,29 +55,44 @@ fn decode_rhyme(item:&Json) -> Option<Rhyme> {
     return None
 }
 
-fn fetch_json(word:&String) -> Json {
-    let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
-    let resp = http::handle().get(url).exec().unwrap(); 
+fn get_json_array(word:&String) -> Vec<Json> {
+    if let Some(json) = fetch_json(word) {
+        if let Some(json_array) = json.as_array() {
+            return json_array.to_owned();
+        }
+    }
+    return vec![];
+}
 
-    let data = str::from_utf8(resp.get_body()).unwrap();
-    let json = Json::from_str(&data).unwrap();
-    return json;
+fn fetch_json(word:&String) -> Option<Json> {
+    let url = format!("http://rhymebrain.com/talk?function=getRhymes&word={}", word);
+    if let Ok(resp) = http::handle().get(url).exec() {
+        if let Ok(data) = str::from_utf8(resp.get_body()) {
+            if let Ok(json) = Json::from_str(&data) {
+                return Some(json)
+            }
+        }
+    }
+    return None;
 }
 
 fn pull_strings_from_dir() -> Vec<String> {
     let path = Path::new("./phrases/");
-    let files = fs::read_dir(path).unwrap();
-
-    let mut strings : Vec<String> = Vec::new();
-    for file in files {
-        let mut f = File::open(file.unwrap().path()).unwrap();
-        let mut s = String::new();
-        f.read_to_string(&mut s);
-        let str = s.split("\n").collect::<Vec<&str>>();
-        for st in str {
-            strings.push(st.to_string());
+    if let Ok(file_names) = fs::read_dir(path) {
+        let mut strings : Vec<String> = Vec::new();
+        for file_name in file_names {
+            if let Ok(file_name) = file_name {
+                if let Ok(mut file) = File::open(file_name.path()) {
+                    let mut s = String::new();
+                    file.read_to_string(&mut s);
+                    let str = s.split("\n").collect::<Vec<&str>>();
+                    for st in str {
+                        strings.push(st.to_string());
+                    }
+                }
+            }
         }
+        return strings;
     }
-
-    return strings;
+    return vec![];
 }
