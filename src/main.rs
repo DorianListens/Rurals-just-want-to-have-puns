@@ -16,7 +16,6 @@ use std::path::Path;
 
 fn main() {
     let word = env::args().nth(1).unwrap_or("heart".to_string());
-    println!("the word is really: {}", word);
     let json = get_json_array(&word);
 
     let rhymes = json.iter()
@@ -24,10 +23,10 @@ fn main() {
         .filter(|rhyme| rhyme.score == 300)
         .collect::<Vec<Rhyme>>();
 
-    let strings = pull_strings_from_dir();
+    let phrases = collect_phrases();
 
-    let puns:Vec<Pun> = strings.iter()
-        .filter_map(|string| return make_pun(&rhymes, &word, string))
+    let puns:Vec<Pun> = phrases.iter()
+        .filter_map(|phrase| return make_pun(&rhymes, &word, phrase))
         .collect();
 
     for pun in &puns {
@@ -63,7 +62,7 @@ fn decode_rhyme(item:&Json) -> Option<Rhyme> {
     return None
 }
 
-fn pull_strings_from_dir() -> Vec<String> {
+fn collect_phrases() -> Vec<String> {
     let path = Path::new("./phrases/");
     let mut strings_to_return : Vec<String> = Vec::new();
     if let Ok(file_names) = fs::read_dir(path) {
