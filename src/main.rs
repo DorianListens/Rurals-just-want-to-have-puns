@@ -19,30 +19,40 @@ fn main() {
     println!("the word is really: {}", word);
     let json = fetch_json(&word);
 
-    let rhymes = json.as_array().unwrap().iter()
-        .map(|item| json::decode::<Rhyme>(&item.to_string()).unwrap())
+    let rhymes = json.as_array().unwrap_or(&vec![]).iter()
+        .filter_map(decode_rhyme)
         .filter(|rhyme| rhyme.score == 300)
         .collect::<Vec<Rhyme>>();
 
     let strings = pull_strings_from_dir();
 
     let puns:Vec<Pun> = strings.iter()
-        .filter_map( |string: &String| {
-            for rhyme in &rhymes {
-               let rstring = format!("\\b{}\\b", &rhyme.word);
-               let regex = Regex::new(&rstring).unwrap();
-               if regex.is_match(&string) {
-                   let replaced = regex.replace(&string, NoExpand(&word));
-                   return Some(Pun::new(&string, &replaced));
-               }
-            }
-            return None;
-        })
+        .filter_map( |string| return make_puns(&rhymes, &word, string))
         .collect();
 
     for pun in &puns {
         println!("{} (pun of {})", &pun.pun, &pun.original);
     }
+}
+
+fn make_puns(rhymes: &Vec<Rhyme>, word: &String, string:&String) -> Option<Pun> {
+    for rhyme in rhymes {
+       let rstring = format!("\\b{}\\b", &rhyme.word);
+       if let Ok(regex) = Regex::new(&rstring) {
+           if regex.is_match(&string) {
+               let replaced = regex.replace(&string, NoExpand(&word));
+               return Some(Pun::new(&string, &replaced));
+           }
+       }
+    }
+    return None;
+}
+
+fn decode_rhyme(item:&Json) -> Option<Rhyme> {
+    if let Ok(rhyme) = json::decode::<Rhyme>(&item.to_string()) {
+        return Some(rhyme)
+    }
+    return None
 }
 
 fn fetch_json(word:&String) -> Json {
