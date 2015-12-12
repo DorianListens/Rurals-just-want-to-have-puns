@@ -19,5 +19,9 @@ impl Pun {
             pun: pun.to_string()
         }
     }
+
+    pub fn print(&self) {
+        println!("{} (pun of {})", self.pun, self.original);
+    }
 }
 

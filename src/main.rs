@@ -27,32 +27,12 @@ fn main() {
     let strings = pull_strings_from_dir();
 
     let puns:Vec<Pun> = strings.iter()
-        .filter_map(|string| return make_puns(&rhymes, &word, string))
+        .filter_map(|string| return make_pun(&rhymes, &word, string))
         .collect();
 
     for pun in &puns {
-        println!("{} (pun of {})", &pun.pun, &pun.original);
+        pun.print();
     }
-}
-
-fn make_puns(rhymes: &Vec<Rhyme>, word: &String, string:&String) -> Option<Pun> {
-    for rhyme in rhymes {
-       let rstring = format!("\\b{}\\b", &rhyme.word);
-       if let Ok(regex) = Regex::new(&rstring) {
-           if regex.is_match(&string) {
-               let replaced = regex.replace(&string, NoExpand(&word));
-               return Some(Pun::new(&string, &replaced));
-           }
-       }
-    }
-    return None;
-}
-
-fn decode_rhyme(item:&Json) -> Option<Rhyme> {
-    if let Ok(rhyme) = json::decode::<Rhyme>(&item.to_string()) {
-        return Some(rhyme)
-    }
-    return None
 }
 
 fn get_json_array(word:&String) -> Vec<Json> {
@@ -76,23 +56,47 @@ fn fetch_json(word:&String) -> Option<Json> {
     return None;
 }
 
+fn decode_rhyme(item:&Json) -> Option<Rhyme> {
+    if let Ok(rhyme) = json::decode::<Rhyme>(&item.to_string()) {
+        return Some(rhyme)
+    }
+    return None
+}
+
 fn pull_strings_from_dir() -> Vec<String> {
     let path = Path::new("./phrases/");
+    let mut strings_to_return : Vec<String> = Vec::new();
     if let Ok(file_names) = fs::read_dir(path) {
-        let mut strings : Vec<String> = Vec::new();
         for file_name in file_names {
             if let Ok(file_name) = file_name {
-                if let Ok(mut file) = File::open(file_name.path()) {
-                    let mut s = String::new();
-                    file.read_to_string(&mut s);
-                    let str = s.split("\n").collect::<Vec<&str>>();
-                    for st in str {
-                        strings.push(st.to_string());
+                if let Ok(file) = File::open(file_name.path()) {
+                    let strings = collect_strings_from_file(file);
+                    for string in strings {
+                        strings_to_return.push(string);
                     }
                 }
             }
         }
-        return strings;
     }
-    return vec![];
+    return strings_to_return;
 }
+
+fn collect_strings_from_file(mut file:File) -> Vec<String> {
+    let mut s = String::new();
+    let result = file.read_to_string(&mut s);
+    return s.split("\n").map(|s| s.to_string()).collect::<Vec<String>>();
+}
+
+fn make_pun(rhymes: &Vec<Rhyme>, word: &String, string:&String) -> Option<Pun> {
+    for rhyme in rhymes {
+       let rstring = format!("\\b{}\\b", &rhyme.word);
+       if let Ok(regex) = Regex::new(&rstring) {
+           if regex.is_match(&string) {
+               let replaced = regex.replace(&string, NoExpand(&word));
+               return Some(Pun::new(&string, &replaced));
+           }
+       }
+    }
+    return None;
+}
+
